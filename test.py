@@ -1,7 +1,7 @@
 from slcid.core import *
 
 # create a default magicBox
-m = mb()
+m = MB()
 
 e = Empty
 

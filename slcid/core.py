@@ -13,82 +13,96 @@ class MagicBox:
     HAS = 'has' # has label
     LEN = 'len' # Number of values
 
-    GET_ITERATOR = 'iterator' # ITERATOR on labels
+    GET_ITERATOR = '_iterator' # ITERATOR on labels
 
-    INTERCEPTORS = 'interceptors' # interceptors
-    GET_INTERCEPTOR_CONTAINER = 'getInterceptorContainer' # get interception container
+    INTERCEPTORS = '_interceptors' # interceptors
+    GET_INTERCEPTOR_CONTAINER = '_getInterceptorContainer' # get interception container
 
-    def __init__(self, source=None, type=None, *contents, **dictionary):
+    def __init__(self, sources=None, typeName=None, interceptors=None, *contents, **contentsWithLabels):
         """ 
         DEFAULT CONSTRUCTOR. Could be parameterized with couples of key string and magic box.
         """
-        # content
+        # content is a dictionary
         self._content = dict()
         # self type string
-        self._type = type
+        if typeName == None:
+            # default type name is python class name
+            self._typeName = type(self).__name__
+        else:
+            self._typeName = typeName
         # default content
         content = self._defaultContent()
-        # put all content which are not given by the input dictionary
+        # put all content which are not given by the input contentsWithLabels
         for label in content:
             self._content[label] = content[label]
-        # source
-        if source!=None:
-            labels = source.labels()
-            if labels!= None:
-                for label in labels:
-                    self._content[label] = content[label]
+        # sources
+        if sources!=None:
+            if isinstance(sources, MB):
+                labels = source.labels()
+                if labels != None:
+                    for label in labels:
+                        self._content[label] = content[label]
+            elif isinstance(sources, list):
+                for source in sources:
+                    labels = source.labels()
+                    if labels != None:
+                        for label in labels:
+                            self._content[label] = content[label]
         # put dictionary
-        if dictionary!=None:
-            for label in dictionary:
-                self._content[label] = dictionary[label]
+        for label in contentsWithLabels:
+            self._content[label] = contentsWithLabels[label]
         # put contents
         for content in contents:
-            self+=content
+            self += content
+        # put interceptors
+        if interceptors != None:
+            _interceptors = MB()
+            _interceptors += interceptors
+            self._content[MagicBox.INTERCEPTORS] = _interceptors
     def _defaultContent(self):
         """
-        Get default content whith keys which have no values
+        Get default content whith keys which are python type values
         """
         result = {
-            MagicBox.GET: None,
-            MagicBox.PUT: None,
-            MagicBox.NEW_LABEL: None,
-            MagicBox.LABELS: None,
-            MagicBox.POP: None,
-            MagicBox.POP_ITEM: None,
-            MagicBox.CLEAR: None,
-            MagicBox.EVAL: None,
-            MagicBox.HAS: None,
-            MagicBox.LEN: None,
-            MagicBox.GET_ITERATOR: None,
-            MagicBox.INTERCEPTORS: None,
-            MagicBox.GET_INTERCEPTOR_CONTAINER: None,
+            MagicBox.GET: Get,
+            MagicBox.PUT: Put,
+            MagicBox.NEW_LABEL: NewLabel,
+            MagicBox.LABELS: Labels,
+            MagicBox.POP: Pop,
+            MagicBox.POP_ITEM: PopItem,
+            MagicBox.CLEAR: Clear,
+            MagicBox.EVAL: Eval,
+            MagicBox.HAS: Has,
+            MagicBox.LEN: Len,
+            MagicBox.GET_ITERATOR: GetIterator,
+            MagicBox.INTERCEPTORS: Interceptors,
+            MagicBox.GET_INTERCEPTOR_CONTAINER: GetInterceptorContainer,
         }
         return result
+    # public methods
     def eval(self, params=None, *contents, **dictionary):
         """
         SELF EVALUATION
         """
         if params==None:
-            params = mb()
-        if contents!=None:
-            params+=contents
-        if dictionary!=None:
-            params+=dictionary
-        result = self._evalContent(MagicBox.EVAL, Eval, params)
+            params = MB()
+        params+=contents
+        params+=dictionary
+        result = self._evalContent(MagicBox.EVAL, params)
         return result
     def get(self, label, default=None):
         """
         return specific python content
         """
-        params = mb()
+        params = MB()
         params._content[Get.LABEL] = label
         params._content[Get.DEFAULT] = default
-        result = self._evalContent(MagicBox.GET, Get, params)
+        result = self._evalContent(MagicBox.GET, params)
         return result
     def has(self, label):
-        params = mb()
+        params = MB()
         params._content[Get.LABEL] = label
-        result = self._evalContent(MagicBox.HAS, Has, params)
+        result = self._evalContent(MagicBox.HAS, params)
         return result
     def put(self, value, label=None):
         """
@@ -96,127 +110,112 @@ class MagicBox:
         """
         if label==None:
             label = self.newLabel()
-        params = mb()
+        params = MB()
         params._content[Put.VALUE] = value
         params._content[Put.LABEL] = label
-        result = self._evalContent(MagicBox.PUT, Put, params)
+        result = self._evalContent(MagicBox.PUT, params)
         return result
-    def newLabel(self, context=None):
+    def newLabel(self, context = None):
         """
         Get an available label in the context of an input mb context
         """
-        params = mb()
+        params = MB()
         params._content[NewLabel.CONTEXT] = context
-        result = self._evalContent(MagicBox.LABEL, Label, params)
+        result = self._evalContent(MagicBox.LABEL, params)
         return result
     def labels(self, lowerBound = None, upperBound = None):
         """
         get a new magic box which contains self labels
         """
-        params = mb()
+        params = MB()
         params._content[Labels.LOWER_BOUND] = lowerBound
         params._content[Labels.UPPER_BOUND] = upperBound
-        result = self._evalContent(MagicBox.LABELS, Labels, params)
+        result = self._evalContent(MagicBox.LABELS, params)
         return result
     def pop(self, label):
         """
         Remove an item from content which corresponds to the input label
         """
-        params = mb()
+        params = MB()
         params._content[Pop.LABEL] = label
-        result = self._evalContent(MagicBox.POP, Pop, params)
+        result = self._evalContent(MagicBox.POP, params)
         return result
     def popItem(self, item):
         """
         Remove the input item
         """
-        params = mb()
+        params = MB()
         params._content[PopItem.ITEM] = item
-        result = self._evalContent(MagicBox.POP_ITEM, PopItem, params)
+        result = self._evalContent(MagicBox.POP_ITEM, params)
         return result
     def clear(self):
         """
         Clear content
         """
-        result = self._evalContent(MagicBox.CLEAR, Clear)
+        result = self._evalContent(MagicBox.CLEAR)
         return result
     def len(self):
         """
         Return number of content
         """
-        result = self._evalContent(MagicBox.LEN, Len)
+        result = self._evalContent(MagicBox.LEN)
         return result
-    def getInterceptorContainer(self, label=None, mbtype=None, update=True):
+    def getInterceptorContainer(self, label=None):
         """
         Used in self eval method. Return the first interceptor stack to evaluate.
         """
-        params = mb()
-        params._content[Eval.EVAL_LABEL] = label
-        params._content[GetInterceptorContainer.MB_TYPE] = mbtype
-        params._content[GetInterceptorContainer.UPDATE] = update
-        result = self._evalContent(MagicBox.GET_INTERCEPTOR_CONTAINER, GetInterceptorContainer, params)
+        params = MB()
+        if label != None:
+            params._content[Eval.EVAL_LABEL] = label
+        result = self._evalContent(MagicBox.GET_INTERCEPTOR_CONTAINER, params)
         return result
     # private operations
-    def _evalContent(self, label=None, type=None, params=None):
+    def _evalContent(self, label=EVAL, params=None):
         """
         Eval content with an input label, default type to create if content doesn't exist and evaluation parameters.
         """
-        result = Empty
-        # get content
-        content = self._getContent(label, type)
-        # create args
-        args = mb()
-        args._content[Eval.CALLER] = self # may be a stack of callers
+        result = None
+        # get content or raise an error
+        content = self._getContent(label)
+        # get default interceptor container
+        getInterceptorContainer = self._getContent(MagicBox.GET_INTERCEPTOR_CONTAINER)
+        
+        interceptorContainer = self.getInterceptorContainer(label)
+        # initialize meta values which may be given by the execution engine
+        args = MB()
         args._content[Eval.PARAMS] = params
+        args._content[Eval.CALLER] = self
         args._content[Eval.EVAL_LABEL] = label
-        # result is content private meta evaluation
-        result = content._meval(args)
+        # evaluate the interceptor container
+        result = interceptorContainer(args)
         return result
-    def _meval(self, args):
+    def _getContent(self, label=EVAL):
         """
-        Meta evaluation which processes meta information and parameters.
+        Get content and initialize it before get it if not already initialized
         """
-        # create parameters
-        params = mb()
-        if Eval.PARAMS in args:
-            params = args[Eval.PARAMS]
-        result = self._eval(params)
+        # get content or raise an error
+        result = self._content[label]
+        # if content is a type, then it is initialized with its instantiation
+        if isinstance(result, type):
+            # then it is initialized with its instantiation
+            result = result()
+            # and update value in content
+            self._content[label] = result
         return result
-    def _eval(self, params):
+    def _eval(self, args):
         """
-        Private Evaluation to override in order to specialize self evaluation.
+        Private Evaluation to override in order to specialize self evaluation if no evaluation content exists.
         """
         return self
-    def _getContent(self, label=None, type=None, update=True):
-        """
-        get content or create a new type
-        """
-        result = Empty
-        # update result only if label is in self._content
-        if label in self._content:
-            # first, get a default interceptor which evaluates self
-            result = self._content[label]
-            # if content does not exist, but if type is not null
-            if result == None and type != None:
-                # content is a new instance of type
-                result = type()
-                # if update, associate new content to label
-                if update:
-                    self._content[label] = result
-            else:
-                raise TypeError
-        else:
-            raise KeyError
-        return result
     # python operators
     def __getattr__(self, label):
         """
-        fired when an attribute lookup has not found the attribute in the usual place
+        Fired when an accessor doesn't exist. Return content with input label.
         """
         return self.get(label)
     def __getitem__(self, label):
         """
-        override python __getitem__ method
+        Override python __getitem__ method
         """
         return self.get(label)
     def __setattribute__(self, label, value):
@@ -240,10 +239,6 @@ class MagicBox:
         return self.eval(params=params, *contents, **dictionary)
     def __iter__(self):
         return self._content.__iter__()
-    def __contains__(self, item):
-        return self.has(item)
-    def __iter__(self):
-        return self._content.__iter__()
     def __contains__(self, label):
         return self.has(label)
     def __len__(self):
@@ -251,7 +246,7 @@ class MagicBox:
     def __sizeof__(self):
         return self._content.len()
     def __add__(self, other):
-        result = mb(self)
+        result = MB(self)
         if isinstance(other, tuple) and len(other)==2:
             result.put(other[1], other[0])
         elif isinstance(other, MagicBox):
@@ -270,7 +265,7 @@ class MagicBox:
             self.put(other)
         return self
     def __sub__(self, other):
-        result = mb(self)
+        result = MB(self)
         if isinstance(other, MagicBox):
             result.popItem(other)
         elif isinstance(other, str):
@@ -283,23 +278,30 @@ class MagicBox:
             self.pop(other)
         return self
     def __and__(self, other):
-        result = mb(contents=(self._content & other._content))
+        result = MB(contents=(self._content & other._content))
         return result
     def __iand__(self, other):
         self._content &= other._content
         return self
-        
+    def __or__(self, other):
+        result = MB(contents=(self._content | other._content))
+        return result
+    def __ior__(self, other):
+        self._content |= other._content
+    def __xor__(self, other):
+        result = MB(contents=(self._content ^ other._content))
+        return result
+    def __ixor__(self, other):
+        self._content ^= other._content
 
 # Shortcut for MagicBox construction
-mb = MagicBox
+MB = MagicBox
 
 class Empty(MagicBox, object):
     """
     Empty box which does not accept content
     """
     pass
-
-Empty = Empty()
 
 class Eval(MagicBox):
     """
@@ -308,17 +310,9 @@ class Eval(MagicBox):
     CALLER = 'CALLER'
     EVAL_LABEL = 'EVAL_LABEL'
     PARAMS = 'PARAMS'
-    
-    def __init__(self, source=None, type=None, *contents, **dictionary):
-        MagicBox.__init__(source, type, *contents, **dictionary)
-        # evaluation eval content is self
-        self[MagicBox.EVAL] = self
-    def _meval(self, args):
-        """
-        Recall caller mevaluation.
-        """
-        caller = _param(args, Eval.CALLER)
-        result = caller._meval(args)
+    def _defaultContent(self):
+        result = MagicBox._defaultContent(self)
+        result[MagicBox.EVAL] = self
         return result
     def _param(self, args, param, default=None):
         """
@@ -332,7 +326,7 @@ class Eval(MagicBox):
         """
         Create arguments from a caller, evaluation name and parameters
         """
-        result = mb()
+        result = MB()
         result[Eval.CALLER] = caller
         result[Eval.PARAMS] = params
         result[Eval.EVAL_LABEL] = evaluationLabel
@@ -449,7 +443,7 @@ class Labels(Get):
         upper = self._param(args, Labels.UPPER_BOUND, -1)
         # new magicbox initialized with all caller keys
         keys = caller._content.keys()[lower:upper]
-        result = mb(keys)
+        result = MB(keys)
         return result
 
 class Len(Get):
@@ -459,6 +453,15 @@ class Len(Get):
     def _eval(self, args):
         caller = self._param(args, Eval.CALLER)
         result = caller._content.len()
+        return result
+
+class GetIterator(Get):
+    """
+    Evaluation for GetIterator operation
+    """
+    def _eval(self, args):
+        caller = self._param(args, Eval.CALLER)
+        result = caller._content.iterator()
         return result
 
 # Interceptors
@@ -473,21 +476,23 @@ class GetInterceptorContainer(Eval):
     """
     Stack of Interceptors
     """
-    MB_TYPE = 'type'
     UPDATE = 'update'
-    def _eval(self, args):
+    def _defaultContent(self):
+        result = MagicBox._defaultContent(self)
+        result[MagicBox.GET_INTERCEPTOR_CONTAINER] = self
+        return result
+    def eval(self, args):
         caller = self.param(args, Eval.CALLER)
         eval_label = self.param(args, Eval.EVAL_LABEL)
-        mbtype = self.param(args, GetStackOfInterceptors.MB_TYPE)
-        update = self.param(args, GetStackOfInterceptors.UPDATE)
+        update = self.param(args, GetInterceptorContainer.UPDATE)
         # default result is empty
         result = Empty
         # first, try to get a default content if content does not exists
-        content = caller._getContent(eval_label, mbtype, update)
+        content = caller._evalContent(eval_label, update)
         # if content exists
         if content != Empty:
             # by default, the result is a default interceptor container
-            result = StackOfInterceptors(content)
+            result = InterceptorContainer(content)
             # get self interceptors
             interceptors = caller.evalInterceptor(MagicBox.INTERCEPTORS, Inters)
             if interceptors != Empty:
@@ -498,19 +503,19 @@ class GetInterceptorContainer(Eval):
                         for _label in specificInterceptors:
                             interceptor = specificInterceptors[_label]
                             if interceptor.check(args):
-                                result = StackOfInterceptors(interceptor, result)
+                                result = InterceptorContainer(interceptor, result)
                 # dynamic interceptors
                 dynamicInterceptors = interceptors._content[Interceptors.DYNAMIC]
                 if dynamicInterceptors != None:
                     for _label in dynamicInterceptors:
                         interceptor = dynamicInterceptors[_label]
-                        result = StackOfInterceptors(interceptor, result)
+                        result = InterceptorContainer(interceptor, result)
                 # global interceptors
                 globalInterceptors = interceptors._content[Interceptors.ALL]
                 if globalInterceptors != None:
                     for _label in globalInterceptors:
                         interceptor = globalInterceptors[_label]
-                        result = StackOfInterceptors(interceptor, result)
+                        result = InterceptorContainer(interceptor, result)
         return result
 
 class Interceptor(MagicBox):
@@ -519,21 +524,19 @@ class Interceptor(MagicBox):
     """
     def _eval(self, args):
         callee = args._content[InterceptorContainer.NEXT]
-        result = callee._eval(args)
+        result = callee.eval(args)
         return result
-    def _evalInterceptor(self, label=None, type=None, params=None):
-        return self._eval(params)
 
 class InterceptorContainer(Interceptor):
     """
-    In charge of evaluate an interceptor
+    In charge of evaluate an interceptor or a magic box
     """
     NEXT = 'NEXT'
     INTERCEPTOR = 'INTERCEPTOR'
-    def __init__(self, interceptor, next=Empty):
+    def __init__(self, interceptor, next=None):
         MagicBox.__init__(self)
         self._content[InterceptorContainer.INTERCEPTOR] = interceptor
-        if next!=Empty:
+        if next!=None:
             self._content[InterceptorContainer.NEXT] = next
     def _eval(self, args):
         # get interceptor
@@ -542,10 +545,57 @@ class InterceptorContainer(Interceptor):
         if InterceptorContainer.NEXT in self._content:
             args._content[InterceptorContainer.NEXT] = self._content[InterceptorContainer.NEXT]
             # evaluate the interceptor with args
-            result = interceptor(args)        
+            result = interceptor(args)
         else:
+            # if next exists in args, delete it
             if InterceptorContainer.NEXT in args._content:
                 del args._content[InterceptorContainer.NEXT]
-            result = interceptor._eval(args)
+            # if evaluation doesn't exist or evaluation equals to interceptor
+            if MagicBox.EVAL not in interceptor._content or interceptor._content[MagicBox.EVAL]==interceptor:
+                # evaluate private evaluation
+                result = interceptor._eval(args)
+            else:
+                # evaluate public evaluation
+                result = interceptor.eval(args)
         return result
-    
+
+class MBConf:
+    """
+    MB configurator annotation
+    """
+    def __init__(self, sources=None, typeName=None, interceptors=None, *contents, **contentsWithLabels):
+        self.sources = sources
+        self.typeName = typeName
+        self.interceptors = interceptors
+        self.contents = contents
+        self.contentsWithLabels = contentsWithLabels
+    def __call__(self, t):
+        def configureMB(sources=None, typeName=None, interceptors=None, *contents, **contentsWithLabels):
+            _sources = self.sources
+            _typeName = self.typeName
+            _interceptors = self.interceptors
+            _contents = self.contents
+            _contentsWithLabels = self.contentsWithLabels
+            result = t(_sources, _typeName, _interceptors, _contents, _contentsWithLabels)
+            if sources != None:
+                result |= sources
+            return result
+        return configureMB
+
+def list2mb(l):
+    """
+    Get a MB from a list
+    """
+    result = MB()
+    result += l
+    return result
+
+def dict2mb(d):
+    """
+    Get a MB from a dictionary
+    """
+    result = MB()
+    result += d
+    return result
+
+Empty = Empty()

@@ -1,5 +1,7 @@
 import core.MB
 
+import instantiation
+
 # scope elements
 class Scope(MB):
     pass

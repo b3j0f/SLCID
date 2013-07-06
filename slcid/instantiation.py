@@ -5,13 +5,20 @@ class Instantiator(MB):
     Class in charge of instantiate magic boxes when evaluated
     """
 
-class ParameterType(Instantiator):
+# scope elements
+class Scope(MB):
     pass
 
-class Operation(Instantiator):
+class ScopedElement(MB):
     pass
 
-class Type(Instantiator):
+class ParameterType(ScopedElement):
+    pass
+
+class Operation(Scope):
+    pass
+
+class Type(Scope):
     pass
 
 class TypeDefinition(Eval):

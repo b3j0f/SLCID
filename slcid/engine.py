@@ -2,13 +2,6 @@ import core.MB
 
 import instantiation
 
-# scope elements
-class Scope(MB):
-    pass
-
-class ScopedElement(MB):
-    pass
-
 # statements
 class Condition(MB):
     pass
@@ -16,19 +9,13 @@ class Condition(MB):
 class Jump(MB):
     pass
 
+class GoTo(MB):
+    pass
+
 class BackTo(MB):
     pass
 
 class Invoker(MB):
-    pass
-
-class ParameterType(MB):
-    pass
-
-class Operation(MB):
-    pass
-
-class Type(MB):
     pass
 
 class ExecutionEngine(MB):
